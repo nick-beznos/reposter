@@ -14,14 +14,19 @@ reddit = asyncpraw.Reddit(
 bot = telegram.Bot(token='5132649553:AAHpGFj_slW-7zct04S0i4BeD6F6aF-xFyw')
 chat_id = '-1001600137694'
 
+# Set to store processed post IDs
+processed_posts = set()
+
 # Асинхронная функция для получения новых постов
-async def get_new_posts(subreddit_name, limit=3):
+async def get_new_posts(subreddit_name, limit=5):
     print(f"Fetching new posts from subreddit: {subreddit_name}")
     subreddit = await reddit.subreddit(subreddit_name)
     new_posts = []
-    async for post in subreddit.new(limit=limit):
-        new_posts.append(post)
-    print(f"Retrieved {limit} new posts")
+    async for post in subreddit.hot(limit=limit):
+        if post.id not in processed_posts:
+            new_posts.append(post)
+            processed_posts.add(post.id)
+    print(f"Retrieved {len(new_posts)} new posts")
     return new_posts
 
 # Асинхронная функция для отправки изображений в Telegram
@@ -47,7 +52,7 @@ async def run_scheduler():
         await asyncio.sleep(1)
 
 # Настройка расписания (например, каждые 1 минуту)
-schedule.every(1).minutes.do(lambda: asyncio.create_task(post_images_to_telegram()))
+schedule.every(1).minute.do(lambda: asyncio.create_task(post_images_to_telegram()))
 print("Scheduled task to post images every 1 minute")
 
 # Основная функция

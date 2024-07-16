@@ -2,17 +2,21 @@ import asyncpraw
 import telegram
 import schedule
 import asyncio
+from dotenv import load_dotenv
+import os
+
+load_dotenv('private/.env')
 
 # Reddit API настройки
 reddit = asyncpraw.Reddit(
-    client_id='vKQMx1ZeL0tpxthMs3mXCg',
-    client_secret='VmHPw8HzWTjc627KaKq-YI4GIrIqcg',
-    user_agent='Telegram scraper by u/Comfortable_Row4872'
+    client_id=os.getenv('REDDIT_CLIENT_ID'),
+    client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
+    user_agent=os.getenv('REDDIT_USER_AGENT')
 )
 
 # Telegram API настройки
-bot = telegram.Bot(token='5132649553:AAHpGFj_slW-7zct04S0i4BeD6F6aF-xFyw')
-chat_id = '-1001600137694'
+bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
+chat_id = os.getenv('AWW_CHAT_ID')
 
 # Set to store processed post IDs
 processed_posts = set()

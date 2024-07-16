@@ -16,7 +16,13 @@ reddit = asyncpraw.Reddit(
 
 # Telegram API настройки
 bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
-chat_id = os.getenv('AWW_CHAT_ID')
+
+# Subreddit to Telegram chat ID mapping
+subreddit_chat_map = {
+    'aww': os.getenv('AWW_CHAT_ID'),
+    'memes': os.getenv('MEMES_CHAT_ID'),
+    # Add more subreddits and their corresponding chat IDs here
+}
 
 # Set to store processed post IDs
 processed_posts = set()
@@ -34,7 +40,7 @@ async def get_new_posts(subreddit_name, limit=5):
     return new_posts
 
 # Асинхронная функция для отправки изображений в Telegram
-async def post_images_to_telegram():
+async def post_images_to_telegram(subreddit_name, chat_id):
     print("Starting to post images to Telegram")
     try:
         new_posts = await get_new_posts('aww', limit=5)
@@ -44,7 +50,7 @@ async def post_images_to_telegram():
                 try:
                     await bot.send_photo(chat_id=chat_id, photo=post.url)
                 except Exception as e:
-                    print(f"Failed to send photo: {e}")
+                    print(f"Failed to send photo: {e}, chatID {chat_id}")
     except Exception as e:
         print(f"Failed to fetch posts: {e}")
     print("Finished posting images to Telegram")
@@ -55,19 +61,17 @@ async def run_scheduler():
         schedule.run_pending()
         await asyncio.sleep(1)
 
-# Настройка расписания (например, каждые 1 минуту)
-schedule.every(1).minute.do(lambda: asyncio.create_task(post_images_to_telegram()))
-print("Scheduled task to post images every 1 minute")
+# Schedule the tasks
+for subreddit, chat_id in subreddit_chat_map.items():
+    schedule.every(1).hour.do(lambda sub=subreddit, chat=chat_id: asyncio.create_task(post_images_to_telegram(sub, chat)))
+    print(f"Scheduled task to post images from subreddit {subreddit} to Telegram chat {chat_id} every 1 hour")
 
 # Основная функция
 async def main():
-    print("Running main function")
-    await post_images_to_telegram()
-    await run_scheduler()
+    await bot.send_message(chat_id="-1001144260170", text="test")
 
 if __name__ == "__main__":
     print("Starting the script")
-
     # Запуск основного цикла событий
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

@@ -29,33 +29,39 @@ subreddit_chat_map = {
 # Set to store processed post IDs
 processed_posts = set()
 
-# Асинхронная функция для получения новых постов
+# Asynchronous function to get new posts with a timeout
 async def get_new_posts(subreddit_name, limit=5):
     print(f"Fetching new posts from subreddit: {subreddit_name}")
-    subreddit = await reddit.subreddit(subreddit_name)
-    new_posts = []
-    async for post in subreddit.hot(limit=limit):
-        if post.id not in processed_posts:
-            new_posts.append(post)
-            processed_posts.add(post.id)
-    print(f"Retrieved {len(new_posts)} new posts")
-    return new_posts
-
-# Асинхронная функция для отправки изображений в Telegram
-async def post_images_to_telegram(subreddit_name, chat_id):
-    print("Starting to post images to Telegram")
     try:
-        new_posts = await get_new_posts('aww', limit=5)
+        subreddit = await reddit.subreddit(subreddit_name)
+        new_posts = []
+        async for post in subreddit.hot(limit=limit):
+            if post.id not in processed_posts:
+                new_posts.append(post)
+                processed_posts.add(post.id)
+        print(f"Retrieved {len(new_posts)} new posts")
+        return new_posts
+    except asyncio.TimeoutError:
+        print(f"Timeout fetching posts from subreddit: {subreddit_name}")
+    except Exception as e:
+        print(f"Failed to fetch posts from subreddit {subreddit_name}: {e}")
+    return []
+
+# Asynchronous function to post images to Telegram with a timeout
+async def post_images_to_telegram(subreddit_name, chat_id):
+    print(f"Starting to post images to Telegram {chat_id}")
+    try:
+        new_posts = await get_new_posts(subreddit_name, limit=5)
         for post in new_posts:
             if post.url.endswith(('jpg', 'jpeg', 'png')):
                 print(f"Posting image: {post.url}")
                 try:
                     await bot.send_photo(chat_id=chat_id, photo=post.url)
                 except Exception as e:
-                    print(f"Failed to send photo: {e}, chatID {chat_id}")
+                    print(f"Failed to send photo to chat ID {chat_id}: {e}")
     except Exception as e:
-        print(f"Failed to fetch posts: {e}")
-    print("Finished posting images to Telegram")
+        print(f"Failed to fetch posts from subreddit {subreddit_name}: {e}")
+    print(f"Finished posting images to Telegram {chat_id}")
 
 # Асинхронная функция для запуска задачи по расписанию
 async def run_scheduler():
@@ -73,9 +79,9 @@ async def main():
     print("Running main function")
     await asyncio.gather(*(post_images_to_telegram(sub, chat) for sub, chat in subreddit_chat_map.items()))
     await run_scheduler()
-    
+
 if __name__ == "__main__":
     print("Starting the script")
-    # Запуск основного цикла событий
+    # Run the main event loop
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

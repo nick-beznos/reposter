@@ -70,8 +70,10 @@ for subreddit, chat_id in subreddit_chat_map.items():
 
 # Основная функция
 async def main():
-    await bot.send_message(chat_id="-1001144260170", text="test")
-
+    print("Running main function")
+    await asyncio.gather(*(post_images_to_telegram(sub, chat) for sub, chat in subreddit_chat_map.items()))
+    await run_scheduler()
+    
 if __name__ == "__main__":
     print("Starting the script")
     # Запуск основного цикла событий

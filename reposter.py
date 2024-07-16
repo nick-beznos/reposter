@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import asyncpraw
 import telegram
 import schedule

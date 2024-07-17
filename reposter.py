@@ -6,8 +6,28 @@ import schedule
 import asyncio
 from dotenv import load_dotenv
 import os
+from contextlib import redirect_stdout
+import pytz
+import datetime
 
 load_dotenv('private/.env')
+
+# Original print function
+original_print = print
+
+# Custom print function
+def print(*args, **kwargs):
+    # Get current time in UTC+3
+    utc_plus_3 = pytz.timezone('Etc/GMT-3')
+    now = datetime.datetime.now(utc_plus_3)
+    timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Construct the message with timestamp
+    message = f"[{timestamp}] {' '.join(map(str, args))}"
+
+    with open("private/log.txt", "a") as log_file:
+        log_file.write(message + "\n")
+    original_print(message, **kwargs)
 
 # Reddit API настройки
 reddit = asyncpraw.Reddit(
@@ -56,7 +76,8 @@ async def post_images_to_telegram(subreddit_name, chat_id):
             if post.url.endswith(('jpg', 'jpeg', 'png')):
                 print(f"Posting image: {post.url}")
                 try:
-                    await bot.send_photo(chat_id=chat_id, photo=post.url)
+                    await asyncio.sleep(1)
+                    # await bot.send_photo(chat_id=chat_id, photo=post.url)
                 except Exception as e:
                     print(f"Failed to send photo to chat ID {chat_id}: {e}")
     except Exception as e:
@@ -71,7 +92,7 @@ async def run_scheduler():
 
 # Schedule the tasks
 for subreddit, chat_id in subreddit_chat_map.items():
-    schedule.every(1).hour.do(lambda sub=subreddit, chat=chat_id: asyncio.create_task(post_images_to_telegram(sub, chat)))
+    schedule.every(1).minute.do(lambda sub=subreddit, chat=chat_id: asyncio.create_task(post_images_to_telegram(sub, chat)))
     print(f"Scheduled task to post images from subreddit {subreddit} to Telegram chat {chat_id} every 1 hour")
 
 # Основная функция

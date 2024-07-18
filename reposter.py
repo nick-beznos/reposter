@@ -55,7 +55,7 @@ async def get_new_posts(subreddit_name, limit=5):
     try:
         subreddit = await reddit.subreddit(subreddit_name)
         new_posts = []
-        async for post in subreddit.hot(limit=limit):
+        async for post in subreddit.top(limit=limit, time_filter="hour"):
             if post.id not in processed_posts:
                 new_posts.append(post)
                 processed_posts.add(post.id)
@@ -76,8 +76,7 @@ async def post_images_to_telegram(subreddit_name, chat_id):
             if post.url.endswith(('jpg', 'jpeg', 'png')):
                 print(f"Posting image: {post.url}")
                 try:
-                    await asyncio.sleep(1)
-                    # await bot.send_photo(chat_id=chat_id, photo=post.url)
+                    await bot.send_photo(chat_id=chat_id, photo=post.url)
                 except Exception as e:
                     print(f"Failed to send photo to chat ID {chat_id}: {e}")
     except Exception as e:

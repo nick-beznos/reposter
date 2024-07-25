@@ -10,10 +10,16 @@ from contextlib import redirect_stdout
 import pytz
 import datetime
 
+# TODO:
+# 1. add video support
+
 load_dotenv('private/.env')
 
 # Original print function
 original_print = print
+
+wait_period_hours = 2
+posts_limit = 2
 
 # Custom print function
 def print(*args, **kwargs):
@@ -42,7 +48,6 @@ bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
 # Subreddit to Telegram chat ID mapping
 subreddit_chat_map = {
     'aww': os.getenv('AWW_CHAT_ID'),
-    'memes': os.getenv('MEMES_CHAT_ID'),
     # Add more subreddits and their corresponding chat IDs here
 }
 
@@ -50,7 +55,7 @@ subreddit_chat_map = {
 processed_posts = set()
 
 # Asynchronous function to get new posts with a timeout
-async def get_new_posts(subreddit_name, limit=5):
+async def get_top_posts(subreddit_name, limit=posts_limit):
     print(f"Fetching new posts from subreddit: {subreddit_name}")
     try:
         subreddit = await reddit.subreddit(subreddit_name)
@@ -71,7 +76,7 @@ async def get_new_posts(subreddit_name, limit=5):
 async def post_images_to_telegram(subreddit_name, chat_id):
     print(f"Starting to post images to Telegram {chat_id}")
     try:
-        new_posts = await get_new_posts(subreddit_name, limit=5)
+        new_posts = await get_top_posts(subreddit_name, limit=posts_limit)
         for post in new_posts:
             if post.url.endswith(('jpg', 'jpeg', 'png')):
                 print(f"Posting image: {post.url}")
@@ -91,8 +96,8 @@ async def run_scheduler():
 
 # Schedule the tasks
 for subreddit, chat_id in subreddit_chat_map.items():
-    schedule.every(1).minute.do(lambda sub=subreddit, chat=chat_id: asyncio.create_task(post_images_to_telegram(sub, chat)))
-    print(f"Scheduled task to post images from subreddit {subreddit} to Telegram chat {chat_id} every 1 hour")
+    schedule.every(wait_period_hours).hours.do(lambda sub=subreddit, chat=chat_id: asyncio.create_task(post_images_to_telegram(sub, chat)))
+    print(f"Scheduled task to post images from subreddit {subreddit} to Telegram chat {chat_id} every {wait_period_hours} hours")
 
 # Основная функция
 async def main():
